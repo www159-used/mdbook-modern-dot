@@ -92,4 +92,3 @@ mod tests {
         assert!(error.to_string().contains("brew install graphviz"));
     }
 }
-

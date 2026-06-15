@@ -1,6 +1,6 @@
-use crate::theme::{load_themes, ThemeFile};
-use mdbook_preprocessor::errors::{Error, Result};
+use crate::theme::{ThemeFile, load_themes};
 use mdbook_preprocessor::PreprocessorContext;
+use mdbook_preprocessor::errors::{Error, Result};
 use serde::Deserialize;
 use toml::Table;
 
@@ -42,11 +42,7 @@ impl Config {
     pub fn load(ctx: &PreprocessorContext) -> Result<Self> {
         let mut config = Self::default();
 
-        if let Some(table) = ctx
-            .config
-            .preprocessors::<Table>()?
-            .get(PREPROCESSOR_NAME)
-        {
+        if let Some(table) = ctx.config.preprocessors::<Table>()?.get(PREPROCESSOR_NAME) {
             config = deserialize_table(table)?;
         }
 

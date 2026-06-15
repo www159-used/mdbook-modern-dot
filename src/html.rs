@@ -25,14 +25,13 @@ pub fn sanitize_svg(output: String) -> String {
 }
 
 pub fn inline_diagram(svg: String) -> String {
-    format!("<div class=\"{OUTPUT_CLASS}\">{svg}</div>", svg = sanitize_svg(svg))
+    format!(
+        "<div class=\"{OUTPUT_CLASS}\">{svg}</div>",
+        svg = sanitize_svg(svg)
+    )
 }
 
-pub fn themed_inline_diagram(
-    light_svg: String,
-    dark_svg: String,
-    wrapper_class: &str,
-) -> String {
+pub fn themed_inline_diagram(light_svg: String, dark_svg: String, wrapper_class: &str) -> String {
     format!(
         "<div class=\"{OUTPUT_CLASS} {wrapper_class}\"><div class=\"diagram-light\">{light}</div><div class=\"diagram-dark\">{dark}</div></div>",
         light = sanitize_svg(light_svg),

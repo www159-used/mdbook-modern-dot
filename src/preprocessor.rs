@@ -28,9 +28,7 @@ impl Preprocessor for ModernDot {
                 )))
             })?;
 
-        runtime.block_on(async {
-            Engine::new(src_dir, config).process_book(&mut book).await
-        })?;
+        runtime.block_on(async { Engine::new(src_dir, config).process_book(&mut book).await })?;
 
         Ok(book)
     }

@@ -8,9 +8,9 @@ use mdbook_preprocessor::errors::Error;
 mod block;
 mod config;
 mod dot;
+mod engine;
 mod html;
 mod preprocessor;
-mod engine;
 mod render;
 mod theme;
 

@@ -66,11 +66,7 @@ async fn render_to_files(block: &DiagramBlock, config: &Config) -> Result<Vec<Ev
     }
 }
 
-fn file_image_events(
-    file_name: &str,
-    graph_name: &str,
-    link_to_file: bool,
-) -> Vec<Event<'static>> {
+fn file_image_events(file_name: &str, graph_name: &str, link_to_file: bool) -> Vec<Event<'static>> {
     let file_name = file_name.to_string();
     let graph_name = graph_name.to_string();
     let mut nodes = Vec::with_capacity(if link_to_file { 5 } else { 3 });
@@ -109,10 +105,9 @@ async fn render_themed_svgs(code: &str, config: &Config) -> Result<(String, Stri
 }
 
 fn themed_dot_sources(code: &str, config: &Config) -> Result<(String, String)> {
-    let theme = config
-        .theme
-        .as_ref()
-        .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "missing theme configuration"))?;
+    let theme = config.theme.as_ref().ok_or_else(|| {
+        io::Error::new(io::ErrorKind::InvalidInput, "missing theme configuration")
+    })?;
 
     let preamble = theme.preamble.as_ref();
     let light_dot = prepare_dot(code, &theme.light, preamble)?;

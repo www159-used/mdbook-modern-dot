@@ -7,9 +7,9 @@ use mdbook_markdown::{MarkdownOptions, new_cmark_parser};
 use mdbook_preprocessor::book::{Book, BookItem, Chapter};
 use mdbook_preprocessor::errors::Result;
 use pulldown_cmark_to_cmark::cmark;
+use std::future::Future;
 use std::path::PathBuf;
 use std::pin::Pin;
-use std::future::Future;
 
 use crate::block::DiagramBlock;
 use crate::config::Config;
@@ -99,8 +99,7 @@ impl Engine {
                 }
             } else if let Event::Start(Tag::CodeBlock(Fenced(info_string))) = &event {
                 let prefix_len = self.config.info_string.len();
-                let (prefix, graph_name) =
-                    info_string.split_at(info_string.len().min(prefix_len));
+                let (prefix, graph_name) = info_string.split_at(info_string.len().min(prefix_len));
                 if prefix == self.config.info_string {
                     block_builder = Some(BlockBuilder::new(
                         chapter_path.clone(),
@@ -497,10 +496,7 @@ digraph Test {
         }
 
         let start = Instant::now();
-        SlowEngine
-            .process_sub_items(&mut chapters)
-            .await
-            .unwrap();
+        SlowEngine.process_sub_items(&mut chapters).await.unwrap();
         let duration = start.elapsed();
 
         for item in chapters {
@@ -528,7 +524,9 @@ digraph Test {
 ```
 "#;
         let mut chapter = new_chapter(content);
-        chapter.sub_items.push(BookItem::Chapter(new_chapter(content)));
+        chapter
+            .sub_items
+            .push(BookItem::Chapter(new_chapter(content)));
 
         let expected = format!(
             r#"# Chapter
