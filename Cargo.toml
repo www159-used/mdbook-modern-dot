@@ -6,6 +6,8 @@ description = "mdBook preprocessor for Graphviz diagrams with light/dark theme s
 readme = "Readme.md"
 license = "AGPL-3.0-or-later"
 edition = "2024"
+repository = "https://github.com/www159-used/mdbook-modern-dot"
+homepage = "https://github.com/www159-used/mdbook-modern-dot"
 
 [[bin]]
 name = "mdbook-modern-dot"
