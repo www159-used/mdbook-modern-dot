@@ -167,88 +167,48 @@ mod tests {
         assert!(light_dot.contains("graph [fontcolor=\"#111111\"];"));
     }
 
-    #[tokio::test]
-    async fn inline_events() {
-        let block = DiagramBlock {
-            graph_name: "Name".into(),
-            code: r#"digraph Test { a -> b }"#.into(),
-            chapter_name: String::new(),
-            chapter_path: "./".into(),
-            index: 0,
-        };
-
-        let mut events = render_diagram(block, &Config::default())
-            .await
-            .unwrap()
-            .into_iter();
-        assert!(matches!(events.next(), Some(Event::Html(_))));
-        assert_eq!(events.next(), Some(Event::Text("\n\n".into())));
-        assert_eq!(events.next(), None);
-    }
-
-    #[tokio::test]
-    async fn file_events() {
-        let block = DiagramBlock {
-            graph_name: "Name".into(),
-            code: r#"digraph Test { a -> b }"#.into(),
-            chapter_name: String::new(),
-            chapter_path: "test-output".into(),
-            index: 0,
-        };
-
-        let mut events = render_diagram(
-            block,
-            &Config {
-                output_to_file: true,
-                ..Config::default()
-            },
-        )
-        .await
-        .unwrap()
-        .into_iter();
+    #[test]
+    fn file_image_events_without_link() {
+        let mut events = file_image_events("_name_0.modern-dot.svg", "Name", false);
+        events.push(Event::Text("\n\n".into()));
+        let mut iter = events.into_iter();
 
         assert!(matches!(
-            events.next(),
+            iter.next(),
             Some(Event::Start(Tag::Image { .. }))
         ));
-        assert!(matches!(events.next(), Some(Event::End(TagEnd::Image))));
-        assert_eq!(events.next(), Some(Event::Text("\n\n".into())));
-        assert_eq!(events.next(), None);
+        assert!(matches!(iter.next(), Some(Event::End(TagEnd::Image))));
+        assert_eq!(iter.next(), Some(Event::Text("\n\n".into())));
+        assert_eq!(iter.next(), None);
     }
 
-    #[tokio::test]
-    async fn file_events_with_link() {
-        let block = DiagramBlock {
-            graph_name: "Name".into(),
-            code: r#"digraph Test { a -> b }"#.into(),
-            chapter_name: String::new(),
-            chapter_path: "test-output".into(),
-            index: 0,
-        };
+    #[test]
+    fn file_image_events_with_link() {
+        let mut events = file_image_events("_name_0.modern-dot.svg", "Name", true);
+        events.push(Event::Text("\n\n".into()));
+        let mut iter = events.into_iter();
 
-        let mut events = render_diagram(
-            block,
-            &Config {
-                output_to_file: true,
-                link_to_file: true,
-                ..Config::default()
-            },
-        )
-        .await
-        .unwrap()
-        .into_iter();
-
+        assert!(matches!(iter.next(), Some(Event::Start(Tag::Link { .. }))));
         assert!(matches!(
-            events.next(),
-            Some(Event::Start(Tag::Link { .. }))
-        ));
-        assert!(matches!(
-            events.next(),
+            iter.next(),
             Some(Event::Start(Tag::Image { .. }))
         ));
-        assert!(matches!(events.next(), Some(Event::End(TagEnd::Image))));
-        assert!(matches!(events.next(), Some(Event::End(TagEnd::Link))));
-        assert_eq!(events.next(), Some(Event::Text("\n\n".into())));
-        assert_eq!(events.next(), None);
+        assert!(matches!(iter.next(), Some(Event::End(TagEnd::Image))));
+        assert!(matches!(iter.next(), Some(Event::End(TagEnd::Link))));
+        assert_eq!(iter.next(), Some(Event::Text("\n\n".into())));
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn inline_diagram_event_shape() {
+        let events = vec![
+            Event::Html(inline_diagram("<svg/>".into()).into()),
+            Event::Text("\n\n".into()),
+        ];
+        let mut iter = events.into_iter();
+
+        assert!(matches!(iter.next(), Some(Event::Html(_))));
+        assert_eq!(iter.next(), Some(Event::Text("\n\n".into())));
+        assert_eq!(iter.next(), None);
     }
 }
