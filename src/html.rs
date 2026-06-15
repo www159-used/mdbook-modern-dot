@@ -2,6 +2,8 @@ use regex::Regex;
 use std::sync::OnceLock;
 
 pub const OUTPUT_CLASS: &str = "mdbook-modern-dot-output";
+/// Breaks out of an open mdBook heading before block diagram HTML.
+pub const BLOCK_SEPARATOR: &str = "<!-- mdbook-modern-dot -->";
 
 fn svg_sanitize_regexes() -> &'static [Regex; 4] {
     static RE: OnceLock<[Regex; 4]> = OnceLock::new();
@@ -64,6 +66,11 @@ pub fn escape_html(value: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn block_separator_is_html_comment() {
+        assert!(BLOCK_SEPARATOR.starts_with("<!--"));
+    }
 
     #[test]
     fn themed_inline_includes_both_variants() {

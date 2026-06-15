@@ -7,7 +7,7 @@ use mdbook_preprocessor::errors::Result;
 use crate::block::DiagramBlock;
 use crate::config::Config;
 use crate::dot::{render_to_file, render_to_svg};
-use crate::html::{inline_diagram, themed_file_diagram, themed_inline_diagram};
+use crate::html::{BLOCK_SEPARATOR, inline_diagram, themed_file_diagram, themed_inline_diagram};
 use crate::theme::prepare_dot;
 
 pub async fn render_diagram(block: DiagramBlock, config: &Config) -> Result<Vec<Event<'static>>> {
@@ -23,12 +23,14 @@ pub async fn render_diagram(block: DiagramBlock, config: &Config) -> Result<Vec<
 async fn render_inline(block: &DiagramBlock, config: &Config) -> Result<Vec<Event<'static>>> {
     if config.themed_output {
         let (light_svg, dark_svg) = render_themed_svgs(&block.code, config).await?;
-        Ok(vec![Event::Html(
-            themed_inline_diagram(light_svg, dark_svg, &config.theme_wrapper_class).into(),
-        )])
+        Ok(html_diagram_events(themed_inline_diagram(
+            light_svg,
+            dark_svg,
+            &config.theme_wrapper_class,
+        )))
     } else {
         let svg = render_to_svg(&config.arguments, &block.code).await?;
-        Ok(vec![Event::Html(inline_diagram(svg).into())])
+        Ok(html_diagram_events(inline_diagram(svg)))
     }
 }
 
@@ -47,15 +49,12 @@ async fn render_to_files(block: &DiagramBlock, config: &Config) -> Result<Vec<Ev
         light?;
         dark?;
 
-        Ok(vec![Event::Html(
-            themed_file_diagram(
-                &config.theme_wrapper_class,
-                &light_name,
-                &dark_name,
-                &block.graph_name,
-            )
-            .into(),
-        )])
+        Ok(html_diagram_events(themed_file_diagram(
+            &config.theme_wrapper_class,
+            &light_name,
+            &dark_name,
+            &block.graph_name,
+        )))
     } else {
         render_to_file(&config.arguments, &block.code, &block.light_path()).await?;
         Ok(file_image_events(
@@ -93,6 +92,13 @@ fn file_image_events(file_name: &str, graph_name: &str, link_to_file: bool) -> V
     }
 
     nodes
+}
+
+fn html_diagram_events(html: String) -> Vec<Event<'static>> {
+    vec![
+        Event::Html(format!("{BLOCK_SEPARATOR}\n\n").into()),
+        Event::Html(html.into()),
+    ]
 }
 
 async fn render_themed_svgs(code: &str, config: &Config) -> Result<(String, String)> {
@@ -173,10 +179,7 @@ mod tests {
         events.push(Event::Text("\n\n".into()));
         let mut iter = events.into_iter();
 
-        assert!(matches!(
-            iter.next(),
-            Some(Event::Start(Tag::Image { .. }))
-        ));
+        assert!(matches!(iter.next(), Some(Event::Start(Tag::Image { .. }))));
         assert!(matches!(iter.next(), Some(Event::End(TagEnd::Image))));
         assert_eq!(iter.next(), Some(Event::Text("\n\n".into())));
         assert_eq!(iter.next(), None);
@@ -189,10 +192,7 @@ mod tests {
         let mut iter = events.into_iter();
 
         assert!(matches!(iter.next(), Some(Event::Start(Tag::Link { .. }))));
-        assert!(matches!(
-            iter.next(),
-            Some(Event::Start(Tag::Image { .. }))
-        ));
+        assert!(matches!(iter.next(), Some(Event::Start(Tag::Image { .. }))));
         assert!(matches!(iter.next(), Some(Event::End(TagEnd::Image))));
         assert!(matches!(iter.next(), Some(Event::End(TagEnd::Link))));
         assert_eq!(iter.next(), Some(Event::Text("\n\n".into())));
@@ -201,12 +201,15 @@ mod tests {
 
     #[test]
     fn inline_diagram_event_shape() {
-        let events = vec![
-            Event::Html(inline_diagram("<svg/>".into()).into()),
-            Event::Text("\n\n".into()),
-        ];
+        let events = html_diagram_events(inline_diagram("<svg/>".into()));
+        let mut events = events;
+        events.push(Event::Text("\n\n".into()));
         let mut iter = events.into_iter();
 
+        assert!(matches!(
+            iter.next(),
+            Some(Event::Html(sep)) if sep.contains(BLOCK_SEPARATOR)
+        ));
         assert!(matches!(iter.next(), Some(Event::Html(_))));
         assert_eq!(iter.next(), Some(Event::Text("\n\n".into())));
         assert_eq!(iter.next(), None);
