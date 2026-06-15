@@ -1,0 +1,37 @@
+[package]
+name = "mdbook-modern-dot"
+version = "1.0.0"
+authors = ["www159, 2107795244@qq.com"]
+description = "mdBook preprocessor for Graphviz diagrams with light/dark theme support"
+readme = "Readme.md"
+license = "GPL-3.0-or-later"
+edition = "2024"
+
+[[bin]]
+name = "mdbook-modern-dot"
+path = "src/main.rs"
+
+
+[dependencies]
+mdbook-preprocessor = "^0.5.2"
+mdbook-markdown = "^0.5.2"
+clap = { version = "4.5", features = ["derive"] }
+serde_json = "1.0"
+pulldown-cmark-to-cmark = "22.0"
+
+regex = "1.12"
+toml = "0.9"
+serde = { version = "1.0", features = ["derive"] }
+
+tokio = { version = "1.48", features = ["io-util", "process", "rt"] }
+futures = "0.3"
+async-recursion = "1.1"
+
+[dev-dependencies]
+tokio = { version = "1.48", features = ["macros", "time"] }
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }

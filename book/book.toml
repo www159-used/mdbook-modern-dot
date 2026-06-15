@@ -1,0 +1,15 @@
+[book]
+authors = ["wei.pengfei"]
+language = "en"
+src = "src"
+title = "mdbook-modern-dot"
+
+[preprocessor.modern-dot]
+command = "cargo run -p mdbook-modern-dot"
+themed-output = true
+theme-file = "../themes/default.toml"
+
+[output.html]
+additional-css = ["modern-dot-theme.css"]
+
+[output.markdown]

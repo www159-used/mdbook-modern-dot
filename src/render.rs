@@ -1,0 +1,259 @@
+use std::io;
+
+use futures::join;
+use mdbook_markdown::pulldown_cmark::{Event, LinkType, Tag, TagEnd};
+use mdbook_preprocessor::errors::Result;
+
+use crate::block::DiagramBlock;
+use crate::config::Config;
+use crate::dot::{render_to_file, render_to_svg};
+use crate::html::{inline_diagram, themed_file_diagram, themed_inline_diagram};
+use crate::theme::prepare_dot;
+
+pub async fn render_diagram(block: DiagramBlock, config: &Config) -> Result<Vec<Event<'static>>> {
+    let mut events = if config.output_to_file {
+        render_to_files(&block, config).await?
+    } else {
+        render_inline(&block, config).await?
+    };
+    events.push(Event::Text("\n\n".into()));
+    Ok(events)
+}
+
+async fn render_inline(block: &DiagramBlock, config: &Config) -> Result<Vec<Event<'static>>> {
+    if config.themed_output {
+        let (light_svg, dark_svg) = render_themed_svgs(&block.code, config).await?;
+        Ok(vec![Event::Html(
+            themed_inline_diagram(light_svg, dark_svg, &config.theme_wrapper_class).into(),
+        )])
+    } else {
+        let svg = render_to_svg(&config.arguments, &block.code).await?;
+        Ok(vec![Event::Html(inline_diagram(svg).into())])
+    }
+}
+
+async fn render_to_files(block: &DiagramBlock, config: &Config) -> Result<Vec<Event<'static>>> {
+    if config.themed_output {
+        let (light_dot, dark_dot) = themed_dot_sources(&block.code, config)?;
+        let light_path = block.light_path();
+        let dark_path = block.dark_path(&config.dark_suffix);
+        let light_name = block.light_file_name();
+        let dark_name = block.dark_file_name(&config.dark_suffix);
+
+        let (light, dark) = join!(
+            render_to_file(&config.arguments, &light_dot, &light_path),
+            render_to_file(&config.arguments, &dark_dot, &dark_path),
+        );
+        light?;
+        dark?;
+
+        Ok(vec![Event::Html(
+            themed_file_diagram(
+                &config.theme_wrapper_class,
+                &light_name,
+                &dark_name,
+                &block.graph_name,
+            )
+            .into(),
+        )])
+    } else {
+        render_to_file(&config.arguments, &block.code, &block.light_path()).await?;
+        Ok(file_image_events(
+            &block.light_file_name(),
+            &block.graph_name,
+            config.link_to_file,
+        ))
+    }
+}
+
+fn file_image_events(
+    file_name: &str,
+    graph_name: &str,
+    link_to_file: bool,
+) -> Vec<Event<'static>> {
+    let file_name = file_name.to_string();
+    let graph_name = graph_name.to_string();
+    let mut nodes = Vec::with_capacity(if link_to_file { 5 } else { 3 });
+
+    if link_to_file {
+        nodes.push(Event::Start(Tag::Link {
+            link_type: LinkType::Inline,
+            dest_url: file_name.clone().into(),
+            title: graph_name.clone().into(),
+            id: "".into(),
+        }));
+    }
+
+    nodes.push(Event::Start(Tag::Image {
+        link_type: LinkType::Inline,
+        dest_url: file_name.into(),
+        title: graph_name.into(),
+        id: "".into(),
+    }));
+    nodes.push(Event::End(TagEnd::Image));
+
+    if link_to_file {
+        nodes.push(Event::End(TagEnd::Link));
+    }
+
+    nodes
+}
+
+async fn render_themed_svgs(code: &str, config: &Config) -> Result<(String, String)> {
+    let (light_dot, dark_dot) = themed_dot_sources(code, config)?;
+    let (light_svg, dark_svg) = join!(
+        render_to_svg(&config.arguments, &light_dot),
+        render_to_svg(&config.arguments, &dark_dot),
+    );
+    Ok((light_svg?, dark_svg?))
+}
+
+fn themed_dot_sources(code: &str, config: &Config) -> Result<(String, String)> {
+    let theme = config
+        .theme
+        .as_ref()
+        .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "missing theme configuration"))?;
+
+    let preamble = theme.preamble.as_ref();
+    let light_dot = prepare_dot(code, &theme.light, preamble)?;
+    let dark_dot = prepare_dot(code, &theme.dark, preamble)?;
+    Ok((light_dot, dark_dot))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::theme::{PreambleConfig, ThemeFile};
+    use std::collections::HashMap;
+
+    fn sample_theme() -> ThemeFile {
+        let mut light = HashMap::new();
+        light.insert("text".to_string(), "#111111".to_string());
+        let mut dark = HashMap::new();
+        dark.insert("text".to_string(), "#eeeeee".to_string());
+        ThemeFile {
+            light,
+            dark,
+            preamble: None,
+        }
+    }
+
+    #[test]
+    fn themed_dot_sources_applies_light_and_dark_tokens() {
+        let config = Config {
+            themed_output: true,
+            theme: Some(sample_theme()),
+            ..Config::default()
+        };
+
+        let (light_dot, dark_dot) =
+            themed_dot_sources("digraph G { node [fontcolor=\"{{ text }}\"]; }", &config).unwrap();
+        assert!(light_dot.contains("#111111"));
+        assert!(dark_dot.contains("#eeeeee"));
+    }
+
+    #[test]
+    fn themed_dot_sources_injects_preamble_when_needed() {
+        let config = Config {
+            themed_output: true,
+            theme: Some(ThemeFile {
+                light: HashMap::from([("text".to_string(), "#111111".to_string())]),
+                dark: HashMap::from([("text".to_string(), "#eeeeee".to_string())]),
+                preamble: Some(PreambleConfig {
+                    graph: Some("graph [fontcolor=\"{{ text }}\"];".to_string()),
+                    node: None,
+                    edge: None,
+                }),
+            }),
+            ..Config::default()
+        };
+
+        let (light_dot, _) = themed_dot_sources("digraph G { A -> B; }", &config).unwrap();
+        assert!(light_dot.contains("graph [fontcolor=\"#111111\"];"));
+    }
+
+    #[tokio::test]
+    async fn inline_events() {
+        let block = DiagramBlock {
+            graph_name: "Name".into(),
+            code: r#"digraph Test { a -> b }"#.into(),
+            chapter_name: String::new(),
+            chapter_path: "./".into(),
+            index: 0,
+        };
+
+        let mut events = render_diagram(block, &Config::default())
+            .await
+            .unwrap()
+            .into_iter();
+        assert!(matches!(events.next(), Some(Event::Html(_))));
+        assert_eq!(events.next(), Some(Event::Text("\n\n".into())));
+        assert_eq!(events.next(), None);
+    }
+
+    #[tokio::test]
+    async fn file_events() {
+        let block = DiagramBlock {
+            graph_name: "Name".into(),
+            code: r#"digraph Test { a -> b }"#.into(),
+            chapter_name: String::new(),
+            chapter_path: "test-output".into(),
+            index: 0,
+        };
+
+        let mut events = render_diagram(
+            block,
+            &Config {
+                output_to_file: true,
+                ..Config::default()
+            },
+        )
+        .await
+        .unwrap()
+        .into_iter();
+
+        assert!(matches!(
+            events.next(),
+            Some(Event::Start(Tag::Image { .. }))
+        ));
+        assert!(matches!(events.next(), Some(Event::End(TagEnd::Image))));
+        assert_eq!(events.next(), Some(Event::Text("\n\n".into())));
+        assert_eq!(events.next(), None);
+    }
+
+    #[tokio::test]
+    async fn file_events_with_link() {
+        let block = DiagramBlock {
+            graph_name: "Name".into(),
+            code: r#"digraph Test { a -> b }"#.into(),
+            chapter_name: String::new(),
+            chapter_path: "test-output".into(),
+            index: 0,
+        };
+
+        let mut events = render_diagram(
+            block,
+            &Config {
+                output_to_file: true,
+                link_to_file: true,
+                ..Config::default()
+            },
+        )
+        .await
+        .unwrap()
+        .into_iter();
+
+        assert!(matches!(
+            events.next(),
+            Some(Event::Start(Tag::Link { .. }))
+        ));
+        assert!(matches!(
+            events.next(),
+            Some(Event::Start(Tag::Image { .. }))
+        ));
+        assert!(matches!(events.next(), Some(Event::End(TagEnd::Image))));
+        assert!(matches!(events.next(), Some(Event::End(TagEnd::Link))));
+        assert_eq!(events.next(), Some(Event::Text("\n\n".into())));
+        assert_eq!(events.next(), None);
+    }
+}
