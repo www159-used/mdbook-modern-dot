@@ -1,15 +1,20 @@
 [book]
-authors = ["wei.pengfei"]
-language = "en"
+authors = ["www159"]
+language = "zh"
 src = "src"
 title = "mdbook-modern-dot"
 
+[rust]
+edition = "2024"
+
 [preprocessor.modern-dot]
-command = "cargo run -p mdbook-modern-dot"
+command = "cargo run -q -p mdbook-modern-dot"
 themed-output = true
 theme-file = "../themes/default.toml"
 
 [output.html]
+site-url = "/mdbook-modern-dot/"
+git-repository-url = "https://github.com/www159-used/mdbook-modern-dot"
 additional-css = ["modern-dot-theme.css"]
 
 [output.markdown]
