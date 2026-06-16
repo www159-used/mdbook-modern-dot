@@ -2,10 +2,10 @@
 
 在 `book.toml` 中添加预处理器：
 
-```toml
+````toml
 [preprocessor.modern-dot]
 command = "mdbook-modern-dot"
-```
+````
 
 在 Markdown 中编写图表：
 
@@ -27,18 +27,18 @@ digraph { input -> output; }
 
 构建：
 
-```shell
+````shell
 mdbook build
-```
+````
 
 ## 启用明暗主题
 
-```toml
+````toml
 [preprocessor.modern-dot]
 command = "mdbook-modern-dot"
 themed-output = true
 theme-file = "themes/default.toml"
-```
+````
 
 启用 `themed-output` 后，预处理器会在**每个含主题图的章节**首张图前自动注入内置 CSS，**无需**复制 `modern-dot-theme.css` 或配置 `additional-css`。
 
@@ -48,9 +48,9 @@ theme-file = "themes/default.toml"
 
 开发本项目时，可指向本地 crate：
 
-```toml
+````toml
 [preprocessor.modern-dot]
-command = "cargo run -q --manifest-path ../Cargo.toml --bin mdbook-modern-dot"
+command = "cargo run -q -p mdbook-modern-dot"
 themed-output = true
 theme-file = "../themes/default.toml"
-```
+````

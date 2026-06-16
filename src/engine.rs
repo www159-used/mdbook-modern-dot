@@ -20,16 +20,11 @@ use crate::theme_css::ThemeCssInjector;
 pub struct Engine {
     src_dir: PathBuf,
     config: Config,
-    theme_css: Arc<ThemeCssInjector>,
 }
 
 impl Engine {
     pub fn new(src_dir: PathBuf, config: Config) -> Self {
-        Self {
-            src_dir,
-            config,
-            theme_css: Arc::new(ThemeCssInjector::default()),
-        }
+        Self { src_dir, config }
     }
 
     pub async fn process_book(&self, book: &mut Book) -> Result<()> {
@@ -72,6 +67,7 @@ impl Engine {
         let mut buf = String::with_capacity(chapter.content.len());
         let mut block_builder: Option<BlockBuilder> = None;
         let mut image_index = 0;
+        let theme_css = Arc::new(ThemeCssInjector::default());
 
         let events = new_cmark_parser(&chapter.content, &MarkdownOptions::default());
         enum ChapterPiece {
@@ -96,7 +92,7 @@ impl Engine {
 
                         pieces.push(ChapterPiece::Diagram(diagram_futures.len()));
                         let config = self.config.clone();
-                        let theme_css = Arc::clone(&self.theme_css);
+                        let theme_css = Arc::clone(&theme_css);
                         diagram_futures.push(Box::pin(async move {
                             render_diagram(block, &config, &theme_css).await
                         }));

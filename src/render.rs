@@ -249,19 +249,28 @@ mod tests {
     }
 
     #[test]
-    fn themed_events_inject_builtin_css_once() {
+    fn themed_events_inject_builtin_css_once_per_chapter() {
         let config = Config {
             themed_output: true,
             inject_theme_css: true,
             ..Config::default()
         };
-        let theme_css = ThemeCssInjector::default();
-        let first = themed_html_diagram_events("<p>diagram</p>".into(), &config, &theme_css);
-        let second = themed_html_diagram_events("<p>other</p>".into(), &config, &theme_css);
+
+        let overview = ThemeCssInjector::default();
+        let first = themed_html_diagram_events("<p>diagram</p>".into(), &config, &overview);
+        let second = themed_html_diagram_events("<p>other</p>".into(), &config, &overview);
 
         assert_eq!(first.len(), 3);
         assert!(matches!(&first[1], Event::Html(html) if html.contains("mdbook-modern-dot-theme")));
         assert_eq!(second.len(), 2);
+
+        let dominated_path = ThemeCssInjector::default();
+        let other_chapter =
+            themed_html_diagram_events("<p>diagram</p>".into(), &config, &dominated_path);
+        assert_eq!(other_chapter.len(), 3);
+        assert!(
+            matches!(&other_chapter[1], Event::Html(html) if html.contains("mdbook-modern-dot-theme"))
+        );
     }
 
     #[test]
