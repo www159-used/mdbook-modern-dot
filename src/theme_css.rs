@@ -17,7 +17,10 @@ impl Default for ThemeCssInjector {
 
 impl ThemeCssInjector {
     pub fn take_style_tag(&self) -> Option<String> {
-        let mut emitted = self.emitted.lock().unwrap_or_else(|poison| poison.into_inner());
+        let mut emitted = self
+            .emitted
+            .lock()
+            .unwrap_or_else(|poison| poison.into_inner());
         if *emitted {
             return None;
         }
