@@ -1,6 +1,6 @@
 [package]
 name = "mdbook-modern-dot"
-version = "0.0.4"
+version = "0.0.5"
 authors = ["www159, 2107795244@qq.com"]
 description = "mdBook preprocessor for Graphviz diagrams with light/dark theme support"
 readme = "Readme.md"

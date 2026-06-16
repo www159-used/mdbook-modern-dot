@@ -296,7 +296,7 @@ dependencies = [
 
 [[package]]
 name = "mdbook-modern-dot"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "async-recursion",
  "clap",
