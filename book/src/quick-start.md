@@ -40,7 +40,7 @@ themed-output = true
 theme-file = "themes/default.toml"
 ```
 
-启用 `themed-output` 后，预处理器会在**首张主题图**前自动注入内置 CSS，**无需**复制 `modern-dot-theme.css` 或配置 `additional-css`。
+启用 `themed-output` 后，预处理器会在**每个含主题图的章节**首张图前自动注入内置 CSS，**无需**复制 `modern-dot-theme.css` 或配置 `additional-css`。
 
 若需自定义样式，可设置 `inject-theme-css = false` 并自行引入 CSS 文件。
 
@@ -50,7 +50,7 @@ theme-file = "themes/default.toml"
 
 ```toml
 [preprocessor.modern-dot]
-command = "cargo run -q -p mdbook-modern-dot"
+command = "cargo run -q --manifest-path ../Cargo.toml --bin mdbook-modern-dot"
 themed-output = true
 theme-file = "../themes/default.toml"
 ```

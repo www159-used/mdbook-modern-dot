@@ -35,13 +35,11 @@ jobs:
       - name: Install mdBook
         run: cargo install mdbook --locked --force
 
-      - name: Build preprocessor
-        run: cargo build --release -p mdbook-modern-dot
+      - name: Install preprocessor
+        run: cargo install --path . --locked --force
 
       - name: Build book
-        run: |
-          sed -i 's|command = "cargo run -q -p mdbook-modern-dot"|command = "../target/release/mdbook-modern-dot"|' book/book.toml
-          mdbook build book
+        run: mdbook build book
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

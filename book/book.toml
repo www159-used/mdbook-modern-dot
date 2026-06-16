@@ -8,7 +8,7 @@ title = "mdbook-modern-dot"
 edition = "2024"
 
 [preprocessor.modern-dot]
-command = "cargo run -q -p mdbook-modern-dot"
+command = "mdbook-modern-dot"
 themed-output = true
 theme-file = "../themes/default.toml"
 

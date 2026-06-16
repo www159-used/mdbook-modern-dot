@@ -6,7 +6,7 @@
 | --- | --- | --- |
 | `command` | *（必填）* | `mdbook-modern-dot` 可执行文件路径 |
 | `themed-output` | `false` | 渲染明、暗两套 SVG |
-| `inject-theme-css` | `true` | 自动注入内置主题切换 CSS（`themed-output = true` 时生效） |
+| `inject-theme-css` | `true` | 在每个含主题图的章节首张图前自动注入内置主题切换 CSS（`themed-output = true` 时生效） |
 | `theme-file` | `themes/default.toml` | 主题 TOML 路径（相对书籍根目录） |
 | `dark-suffix` | `-dark` | 文件模式下暗色 SVG 文件名后缀 |
 | `theme-wrapper-class` | `theme-diagram` | 主题输出外层 CSS 类名 |
