@@ -1,8 +1,0 @@
-[package]
-name = "mdbook-modern-dot-book"
-version = "0.0.0"
-edition = "2024"
-publish = false
-
-[dependencies]
-mdbook-modern-dot = "0.0.6"
