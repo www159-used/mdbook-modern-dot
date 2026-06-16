@@ -38,14 +38,11 @@ mdbook build
 command = "mdbook-modern-dot"
 themed-output = true
 theme-file = "themes/default.toml"
-
-[output.html]
-additional-css = ["modern-dot-theme.css"]
 ```
 
-将 [`modern-dot-theme.css`](https://github.com/www159-used/mdbook-modern-dot/blob/master/assets/modern-dot-theme.css) 复制到书籍目录（与 `book.toml` 同级）。
+启用 `themed-output` 后，预处理器会在**首张主题图**前自动注入内置 CSS，**无需**复制 `modern-dot-theme.css` 或配置 `additional-css`。
 
-**无需**手写明暗 HTML——预处理器会自动渲染两套 SVG 并完成包裹。
+若需自定义样式，可设置 `inject-theme-css = false` 并自行引入 CSS 文件。
 
 ## 本仓库开发
 

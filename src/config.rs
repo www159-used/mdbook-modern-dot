@@ -15,6 +15,7 @@ pub struct Config {
     pub info_string: String,
     pub arguments: Vec<String>,
     pub themed_output: bool,
+    pub inject_theme_css: bool,
     pub theme_file: Option<String>,
     pub dark_suffix: String,
     pub theme_wrapper_class: String,
@@ -30,6 +31,7 @@ impl Default for Config {
             info_string: DEFAULT_INFO_STRING.to_string(),
             arguments: vec!["-Tsvg".into()],
             themed_output: false,
+            inject_theme_css: true,
             theme_file: None,
             dark_suffix: "-dark".into(),
             theme_wrapper_class: "theme-diagram".into(),
@@ -97,5 +99,19 @@ mod tests {
         assert!(config.themed_output);
         assert_eq!(config.info_string, "custom");
         assert_eq!(config.dark_suffix, "-night");
+    }
+
+    #[test]
+    fn inject_theme_css_defaults_true_when_loading_book_table() {
+        let table: Table = toml::from_str(
+            r#"
+            command = "mdbook-modern-dot"
+            themed-output = true
+            theme-file = "themes/default.toml"
+        "#,
+        )
+        .unwrap();
+        let config: Config = deserialize_table(&table).unwrap();
+        assert!(config.inject_theme_css);
     }
 }

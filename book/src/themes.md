@@ -45,7 +45,17 @@ digraph G {
 
 ## CSS 切换
 
-将 `modern-dot-theme.css` 复制到书籍目录，并通过 `additional-css` 引入。该文件在浅色主题下隐藏 `.diagram-dark`，在深色主题（Coal、Navy、Ayu）下隐藏 `.diagram-light`。
+默认 `inject-theme-css = true` 时，预处理器在首张主题图前注入内置 `<style>`，无需额外文件。
+
+若需自定义，可关闭自动注入并手动引入 [`assets/modern-dot-theme.css`](https://github.com/www159-used/mdbook-modern-dot/blob/master/assets/modern-dot-theme.css)：
+
+```toml
+[preprocessor.modern-dot]
+inject-theme-css = false
+
+[output.html]
+additional-css = ["modern-dot-theme.css"]
+```
 
 生成的 HTML 结构：
 

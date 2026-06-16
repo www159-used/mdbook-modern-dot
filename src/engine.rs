@@ -10,19 +10,26 @@ use pulldown_cmark_to_cmark::cmark;
 use std::future::Future;
 use std::path::PathBuf;
 use std::pin::Pin;
+use std::sync::Arc;
 
 use crate::block::DiagramBlock;
 use crate::config::Config;
 use crate::render::render_diagram;
+use crate::theme_css::ThemeCssInjector;
 
 pub struct Engine {
     src_dir: PathBuf,
     config: Config,
+    theme_css: Arc<ThemeCssInjector>,
 }
 
 impl Engine {
     pub fn new(src_dir: PathBuf, config: Config) -> Self {
-        Self { src_dir, config }
+        Self {
+            src_dir,
+            config,
+            theme_css: Arc::new(ThemeCssInjector::default()),
+        }
     }
 
     pub async fn process_book(&self, book: &mut Book) -> Result<()> {
@@ -89,8 +96,9 @@ impl Engine {
 
                         pieces.push(ChapterPiece::Diagram(diagram_futures.len()));
                         let config = self.config.clone();
+                        let theme_css = Arc::clone(&self.theme_css);
                         diagram_futures.push(Box::pin(async move {
-                            render_diagram(block, &config).await
+                            render_diagram(block, &config, &theme_css).await
                         }));
                     }
                     _ => {

@@ -15,6 +15,5 @@ theme-file = "../themes/default.toml"
 [output.html]
 site-url = "/mdbook-modern-dot/"
 git-repository-url = "https://github.com/www159-used/mdbook-modern-dot"
-additional-css = ["modern-dot-theme.css"]
 
 [output.markdown]

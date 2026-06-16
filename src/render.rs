@@ -9,32 +9,45 @@ use crate::config::Config;
 use crate::dot::{render_to_file, render_to_svg};
 use crate::html::{BLOCK_SEPARATOR, inline_diagram, themed_file_diagram, themed_inline_diagram};
 use crate::theme::prepare_dot;
+use crate::theme_css::ThemeCssInjector;
 
-pub async fn render_diagram(block: DiagramBlock, config: &Config) -> Result<Vec<Event<'static>>> {
+pub async fn render_diagram(
+    block: DiagramBlock,
+    config: &Config,
+    theme_css: &ThemeCssInjector,
+) -> Result<Vec<Event<'static>>> {
     let mut events = if config.output_to_file {
-        render_to_files(&block, config).await?
+        render_to_files(&block, config, theme_css).await?
     } else {
-        render_inline(&block, config).await?
+        render_inline(&block, config, theme_css).await?
     };
     events.push(Event::Text("\n\n".into()));
     Ok(events)
 }
 
-async fn render_inline(block: &DiagramBlock, config: &Config) -> Result<Vec<Event<'static>>> {
+async fn render_inline(
+    block: &DiagramBlock,
+    config: &Config,
+    theme_css: &ThemeCssInjector,
+) -> Result<Vec<Event<'static>>> {
     if config.themed_output {
         let (light_svg, dark_svg) = render_themed_svgs(&block.code, config).await?;
-        Ok(html_diagram_events(themed_inline_diagram(
-            light_svg,
-            dark_svg,
-            &config.theme_wrapper_class,
-        )))
+        Ok(themed_html_diagram_events(
+            themed_inline_diagram(light_svg, dark_svg, &config.theme_wrapper_class),
+            config,
+            theme_css,
+        ))
     } else {
         let svg = render_to_svg(&config.arguments, &block.code).await?;
         Ok(html_diagram_events(inline_diagram(svg)))
     }
 }
 
-async fn render_to_files(block: &DiagramBlock, config: &Config) -> Result<Vec<Event<'static>>> {
+async fn render_to_files(
+    block: &DiagramBlock,
+    config: &Config,
+    theme_css: &ThemeCssInjector,
+) -> Result<Vec<Event<'static>>> {
     if config.themed_output {
         let (light_dot, dark_dot) = themed_dot_sources(&block.code, config)?;
         let light_path = block.light_path();
@@ -49,12 +62,16 @@ async fn render_to_files(block: &DiagramBlock, config: &Config) -> Result<Vec<Ev
         light?;
         dark?;
 
-        Ok(html_diagram_events(themed_file_diagram(
-            &config.theme_wrapper_class,
-            &light_name,
-            &dark_name,
-            &block.graph_name,
-        )))
+        Ok(themed_html_diagram_events(
+            themed_file_diagram(
+                &config.theme_wrapper_class,
+                &light_name,
+                &dark_name,
+                &block.graph_name,
+            ),
+            config,
+            theme_css,
+        ))
     } else {
         render_to_file(&config.arguments, &block.code, &block.light_path()).await?;
         Ok(file_image_events(
@@ -99,6 +116,22 @@ fn html_diagram_events(html: String) -> Vec<Event<'static>> {
         Event::Html(format!("{BLOCK_SEPARATOR}\n\n").into()),
         Event::Html(html.into()),
     ]
+}
+
+fn themed_html_diagram_events(
+    html: String,
+    config: &Config,
+    theme_css: &ThemeCssInjector,
+) -> Vec<Event<'static>> {
+    let mut events = Vec::new();
+    events.push(Event::Html(format!("{BLOCK_SEPARATOR}\n\n").into()));
+    if config.inject_theme_css
+        && let Some(style) = theme_css.take_style_tag()
+    {
+        events.push(Event::Html(style.into()));
+    }
+    events.push(Event::Html(html.into()));
+    events
 }
 
 async fn render_themed_svgs(code: &str, config: &Config) -> Result<(String, String)> {
@@ -213,5 +246,40 @@ mod tests {
         assert!(matches!(iter.next(), Some(Event::Html(_))));
         assert_eq!(iter.next(), Some(Event::Text("\n\n".into())));
         assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn themed_events_inject_builtin_css_once() {
+        let config = Config {
+            themed_output: true,
+            inject_theme_css: true,
+            ..Config::default()
+        };
+        let theme_css = ThemeCssInjector::default();
+        let first = themed_html_diagram_events("<p>diagram</p>".into(), &config, &theme_css);
+        let second = themed_html_diagram_events("<p>other</p>".into(), &config, &theme_css);
+
+        assert_eq!(first.len(), 3);
+        assert!(matches!(&first[1], Event::Html(html) if html.contains("mdbook-modern-dot-theme")));
+        assert_eq!(second.len(), 2);
+    }
+
+    #[test]
+    fn themed_style_survives_cmark_roundtrip() {
+        use pulldown_cmark_to_cmark::cmark;
+
+        let config = Config {
+            themed_output: true,
+            inject_theme_css: true,
+            ..Config::default()
+        };
+        let theme_css = ThemeCssInjector::default();
+        let events = themed_html_diagram_events("<div>d</div>".into(), &config, &theme_css);
+        let mut buf = String::new();
+        cmark(events.into_iter(), &mut buf).unwrap();
+        assert!(
+            buf.contains("mdbook-modern-dot-theme"),
+            "expected style in markdown output: {buf}"
+        );
     }
 }

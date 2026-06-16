@@ -13,6 +13,7 @@ mod html;
 mod preprocessor;
 mod render;
 mod theme;
+mod theme_css;
 
 use crate::preprocessor::ModernDot;
 
