@@ -45,7 +45,7 @@ digraph G {
 
 ## CSS 切换
 
-默认 `inject-theme-css = true` 时，预处理器在每个含主题图的章节首张图前注入内置 `<style>`，无需额外文件。
+默认 `inject-theme-css = true` 时，预处理器在每个含主题图的章节首张图前注入内置 `<style>`（含明暗切换与 SVG 自适应宽度），无需额外文件。
 
 若需自定义，可关闭自动注入并手动引入 [`assets/modern-dot-theme.css`](https://github.com/www159-used/mdbook-modern-dot/blob/master/assets/modern-dot-theme.css)：
 

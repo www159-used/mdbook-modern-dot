@@ -39,6 +39,7 @@ mod tests {
         let first = injector.take_style_tag().unwrap();
         assert!(first.contains(STYLE_ID));
         assert!(first.contains(".theme-diagram"));
+        assert!(first.contains("max-width: 100%"));
         assert!(injector.take_style_tag().is_none());
 
         let other_chapter = ThemeCssInjector::default();
